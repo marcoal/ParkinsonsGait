@@ -31,9 +31,14 @@ class FeatureGen:
 		df = df[:166]                     # Delete nan columns
 		self.demographics = df
 
-	def getFeatures(self, matrix):
+	def getOneMeanFeatures(self, matrix):
 		return [1] + [matrix[self.schema[1:]].mean().mean()]
-		# return [1] + matrix[self.schema[1:]].mean().values.tolist()
+
+	def getSensorMeanFeatures(self, matrix):
+		return [1] + matrix[self.schema[1:]].mean().values.tolist()
+
+	def getFeatures(self, matrix):
+		pass
 
  	def getLabel(self, subjectId):
 		group = int((self.demographics.loc[self.demographics['ID'] == subjectId]['Group']))
