@@ -10,6 +10,17 @@ from sklearn.svm import SVC, LinearSVC
 f = FeatureGen()
 X, Y = f.getXY()
 
+# Analyze mean force of PD and non-PD subjects
+a = zip(X, Y)
+nonPD = [x[1] for x, y in a if y == 0]
+PD = [x[1] for x, y in a if y == 1]
+nonPDmean = np.mean(nonPD)
+PDmean = np.mean(PD)
+nonPDvar = np.var(nonPD)
+PDvar = np.var(PD)
+print "Mean: {}, variance: {}".format(nonPDmean, nonPDvar)
+print "Mean: {}, variance: {}".format(PDmean, PDvar)
+
 # Random Forest Classifier
 # TODO: Training accuracy 99%, test 57%...
 # Looks like we have a variance problem

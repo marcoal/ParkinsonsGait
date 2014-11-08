@@ -32,7 +32,7 @@ class FeatureGen:
 		self.demographics = df
 
 	def getFeatures(self, matrix):
-		return [1] + matrix[self.schema[1:]].mean().values.tolist()
+		return [1] + [matrix[self.schema[1:]].mean().mean()]
 
 	def getLabel(self, subjectId):
 		group = int((self.demographics.loc[self.demographics['ID'] == subjectId]['Group']))
