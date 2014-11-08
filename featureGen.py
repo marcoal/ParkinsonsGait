@@ -15,13 +15,15 @@ class FeatureGen:
 
 	def loadGaitData(self):
 		for filename in os.listdir('data'):
-			key = filename.split('_')[0]
-			filename = os.path.join('data', filename)
-			df = pd.read_csv(filename, sep='\t', names=self.schema)
-			if key not in self.gaitData:
-				self.gaitData[key] = [df]
-			else:
-				self.gaitData[key].append(df)
+			key, walkNumber = filename.split('_')
+			# Process data only for non-serial 7 subjects
+			if '10' not in walkNumber:
+				filename = os.path.join('data', filename)
+				df = pd.read_csv(filename, sep='\t', names=self.schema)
+				if key not in self.gaitData:
+					self.gaitData[key] = [df]
+				else:
+					self.gaitData[key].append(df)
 
 	def loadDemographics(self):
 		infile = open('demographics.txt', 'r')
@@ -31,6 +33,9 @@ class FeatureGen:
 		df = df[:166]                     # Delete nan columns
 		self.demographics = df
 
+	def normalizeSignals(self):
+		pass
+
 	def getOneMeanFeatures(self, matrix):
 		return [1] + [matrix[self.schema[1:]].mean().mean()]
 
@@ -38,7 +43,7 @@ class FeatureGen:
 		return [1] + matrix[self.schema[1:]].mean().values.tolist()
 
 	def getFeatures(self, matrix):
-		pass
+		return self.getSensorMeanFeatures(matrix)
 
  	def getLabel(self, subjectId):
 		group = int((self.demographics.loc[self.demographics['ID'] == subjectId]['Group']))
@@ -47,6 +52,7 @@ class FeatureGen:
 	def getXY(self):
 		self.loadGaitData()
 		self.loadDemographics()
+		self.normalizeSignals()
 
 		X, Y = [], []
 		for subjectId in sorted(self.gaitData.keys()):
