@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import os
 import pandas as pd
@@ -34,7 +35,11 @@ class FeatureGen:
 		self.demographics = df
 
 	def normalizeSignals(self):
-		pass
+		for subjectId in self.gaitData:
+			weight = float(self.demographics.loc[self.demographics['ID'] == subjectId]['Weight'])
+			if not math.isnan(weight):
+				for i in range(len(self.gaitData[subjectId])):
+					self.gaitData[subjectId][i] = self.gaitData[subjectId][i]/weight
 
 	def getOneMeanFeatures(self, matrix):
 		return [1] + [matrix[self.schema[1:]].mean().mean()]

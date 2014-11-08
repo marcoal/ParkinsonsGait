@@ -56,7 +56,6 @@ def main():
 	# Create feature and label vectors
 	f = FeatureGen()
 	X, Y = f.getXY()
-	print len(Y)
 	# analyzeMeans(X, Y)
 	# plotTrainTest(LogisticRegression(), X, Y)
 	crossValidate(LogisticRegression(), X, Y)
