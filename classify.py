@@ -8,16 +8,19 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC, LinearSVC
 
-# Analyze mean force of PD and non-PD subjects
-def analyzeMeans(X, Y):
+# Analyze mean force for each sensor
+def analyzeSensorMeans(X, Y):
 	print np.mean(X, axis=0)
-	# a = zip(X, Y)
-	# nonPD = [x[1] for x, y in a if y == 0]
-	# PD = [x[1] for x, y in a if y == 1]
-	# nonPDmean, PDmean = np.mean(nonPD), np.mean(PD) 
-	# nonPDvar, PDvar = np.var(nonPD), np.var(PD)
-	# print "Mean: {}, variance: {}".format(nonPDmean, nonPDvar)
-	# print "Mean: {}, variance: {}".format(PDmean, PDvar)
+
+# Analyze mean force for PD and nonPD subjects
+def analyzeGlobalMeans(X, Y):
+	a = zip(X, Y)
+	nonPD = [x[1] for x, y in a if y == 0]
+	PD = [x[1] for x, y in a if y == 1]
+	nonPDmean, PDmean = np.mean(nonPD), np.mean(PD) 
+	nonPDvar, PDvar = np.var(nonPD), np.var(PD)
+	print "Mean: {}, variance: {}".format(nonPDmean, nonPDvar)
+	print "Mean: {}, variance: {}".format(PDmean, PDvar)
 
 # Run Logistic Regression and plot train and test errors
 def plotTrainTest(clf, X, Y):
