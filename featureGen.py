@@ -1,8 +1,6 @@
-import math
+import math, os, random, sklearn
 import numpy as np
-import os
 import pandas as pd
-import sklearn
 
 class FeatureGen:
 
@@ -47,8 +45,18 @@ class FeatureGen:
 	def getSensorMeanFeatures(self, matrix):
 		return [1] + matrix[self.schema[1:]].mean().values.tolist()
 
+	def getStrideFeatures(self, matrix):
+		diff = matrix['Total Force Left'] - matrix['Total Force Right']
+		zeroCrossings = np.where(np.diff(np.sign(diff)))[0]
+		strideLengths = np.diff(zeroCrossings)
+		mean = np.mean(strideLengths)
+		variance = np.var(strideLengths)
+		return [mean, variance]
+
 	def getFeatures(self, matrix):
-		return self.getSensorMeanFeatures(matrix)
+		strideFeatures = self.getStrideFeatures(matrix)
+		sensorMeanFeatures = self.getSensorMeanFeatures(matrix)
+		return strideFeatures + sensorMeanFeatures
 
  	def getLabel(self, subjectId):
 		group = int((self.demographics.loc[self.demographics['ID'] == subjectId]['Group']))
@@ -64,4 +72,11 @@ class FeatureGen:
 			for matrix in self.gaitData[subjectId]:
 				X.append(self.getFeatures(matrix))
 				Y.append(self.getLabel(subjectId))
+
+		# Randomize X and Y to improve accuracy estimations
+		XY = zip(X, Y)
+		random.shuffle(XY)
+		X = [x for x, y in XY]
+		Y = [y for x, y in XY]
+		print Y
 		return X, Y

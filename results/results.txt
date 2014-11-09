@@ -4,9 +4,12 @@ Log of changes:
 	-Baseline logistic regression on sensor means: 55.3% accuracy
 	-Removed serial 7 subjects (306 -> 279 total subjects)... 58.6%
 	-Normalize by weight... 61.4%
+	-Got stride time mean and variability... 69.1%
 	-Wavelet decomposition (Marco)
 	-Fourier Transform (Kevin)
 	-Normalization (Daryl)
+		-Intra-group normalization (according to Tahir) helps?
+
 
 Description of images and results:
 	-train_test_error_18_means.png
@@ -16,4 +19,10 @@ Description of images and results:
 	-PD - Mean: 102.559396496, variance: 197.930537514
 
 Papers:
-	
+	-http://www.jneuroengrehab.com/content/2/1/23
+
+Miscellaneous:
+	"In the clinical diagnosis of patients with Parkinson’s or knee osteoarthritis disease, the ambulatory
+	estimation of lower extremity movement in the gait is usually necessary [172]. Based on the estimation
+	results of the lower extremities, the disease and its severity can be determined, and clinicians can
+	establish a proper treatment scheme for the patients." - Sensors paper
