@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.cross_validation import cross_val_score
 from sklearn.linear_model import LogisticRegression
 
+
 # Analyze mean force for each sensor
 def analyzeSensorMeans(X, Y):
     print np.mean(X, axis=0)
@@ -69,7 +70,7 @@ def main():
     print subsetFeatures
     # analyzeMeans(X, Y)
     plotTrainTest(LogisticRegression(), np.array(X)[:, subsetFeatures], Y)
-    # crossValidate(LogisticRegression(), X, Y)
+    #crossValidate(LogisticRegression(), X, Y)
 
 
 if __name__ == "__main__":
