@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.cross_validation import cross_val_score
 
 
-# This code wa adapted from Sebastian Raschka http://sebastianraschka.com/Articles/2014_sequential_sel_algos.html#sfs
+# This code was adapted from Sebastian Raschka
 def forward_search(features, max_k, criterion_func, params):
     '''
     Forward search for best subset of features
