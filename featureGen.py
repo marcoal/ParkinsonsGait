@@ -2,6 +2,7 @@ import math, os, random, sklearn
 import numpy as np
 import pandas as pd
 
+
 class FeatureGen:
 
 	def __init__(self):
@@ -52,6 +53,12 @@ class FeatureGen:
 		mean = np.mean(strideLengths)
 		variance = np.var(strideLengths)
 		return [mean, variance]
+
+	def get_Wavelet_ApproxCoefficients(self, matrix, cropN):  # Currently just for L1
+        import pywt
+        l1_sensor = matrix[self.schema[1]]
+        cA, cD = pywt.dwt(l1_sensor, 'coif1')
+        return list(cA[:cropN])
 
 	def getFeatures(self, matrix):
 		strideFeatures = self.getStrideFeatures(matrix)

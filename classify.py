@@ -1,4 +1,6 @@
 from featureGen import FeatureGen
+from featureSelect import forward_search
+from featureSelect import cv_accuracy
 from matplotlib import pyplot
 import numpy as np
 from numpy.linalg import inv
@@ -9,20 +11,24 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score
 from sklearn.svm import SVC, LinearSVC
+from sklearn.cross_validation import cross_val_score
+from sklearn.linear_model import LogisticRegression
 
 # Analyze mean force for each sensor
 def analyzeSensorMeans(X, Y):
-	print np.mean(X, axis=0)
+    print np.mean(X, axis=0)
+
 
 # Analyze mean force for PD and nonPD subjects
 def analyzeGlobalMeans(X, Y):
-	a = zip(X, Y)
-	nonPD = [x[1] for x, y in a if y == 0]
-	PD = [x[1] for x, y in a if y == 1]
-	nonPDmean, PDmean = np.mean(nonPD), np.mean(PD) 
-	nonPDvar, PDvar = np.var(nonPD), np.var(PD)
-	print "Mean: {}, variance: {}".format(nonPDmean, nonPDvar)
-	print "Mean: {}, variance: {}".format(PDmean, PDvar)
+    a = zip(X, Y)
+    nonPD = [x[1] for x, y in a if y == 0]
+    PD = [x[1] for x, y in a if y == 1]
+    nonPDmean, PDmean = np.mean(nonPD), np.mean(PD)
+    nonPDvar, PDvar = np.var(nonPD), np.var(PD)
+    print "Mean: {}, variance: {}".format(nonPDmean, nonPDvar)
+    print "Mean: {}, variance: {}".format(PDmean, PDvar)
+
 
 def downsample(X, Y):
 	numPositive = sum(Y)
@@ -67,16 +73,22 @@ def plotTrainTest(clf, X, Y):
 	pyplot.show()
 
 def crossValidate(clf, X, Y):
-	scores = cross_val_score(clf, X, Y, cv=5)
-	print "Test accuracy for {}: {}".format(clf.__class__.__name__, sum(scores)/len(scores))
+    scores = cross_val_score(clf, X, Y, cv=5)
+    accuracy = sum(scores) / len(scores)
+    print "Test accuracy for {}: {}, nFeatures: {}".format(clf.__class__.__name__, accuracy, len(X[0]))
+    return accuracy
 
 def main():
-	# Create feature and label vectors
-	f = FeatureGen()
-	X, Y = f.getXY()
-	# X, Y = downsample(X, Y)
-	plotTrainTest(LogisticRegression(), X, Y)
-	crossValidate(LogisticRegression(), X, Y)
+    # Create feature and label vectors
+    f = FeatureGen()
+    X, Y = f.getXY()
+
+    nF = len(X[0])
+    subsetFeatures = forward_search(list(xrange(nF)), 10, cv_accuracy, [LogisticRegression(), X, Y])
+    print subsetFeatures
+    # analyzeMeans(X, Y)
+    plotTrainTest(LogisticRegression(), np.array(X)[:, subsetFeatures], Y)
+    #crossValidate(LogisticRegression(), X, Y)
 
 if __name__ == "__main__":
-	main()
+    main()

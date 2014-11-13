@@ -15,7 +15,7 @@ Description of images and results:
 	-train_test_error_18_means.png
 	-train_test_error_1_mean.png
 		-Takes mean across all columns (except Time), then all rows to get the global mean
-	-nonPD - Mean: 98.1695057002, variance: 320.685680412	
+	-nonPD - Mean: 98.1695057002, variance: 320.685680412
 	-PD - Mean: 102.559396496, variance: 197.930537514
 
 Papers:
