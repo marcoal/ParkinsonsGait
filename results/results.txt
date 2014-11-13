@@ -4,7 +4,7 @@ Log of changes:
 	-Baseline logistic regression on sensor means: 55.3% accuracy
 	-Removed serial 7 subjects (306 -> 279 total subjects)... 58.6%
 	-Normalize by weight... 61.4%
-	-Got stride time mean and variability... 69.1%
+	-Got stride time mean and variability... 69.1%... but predicts all 1's!
 	-Wavelet decomposition (Marco)
 	-Fourier Transform (Kevin)
 	-Normalization (Daryl)
