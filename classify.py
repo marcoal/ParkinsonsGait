@@ -6,10 +6,10 @@ import numpy as np
 from numpy.linalg import inv
 import random
 import sklearn
-from sklearn.cross_validation import cross_val_score
+from sklearn.cross_validation import cross_val_score, train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.svm import SVC, LinearSVC
 from sklearn.cross_validation import cross_val_score
 from sklearn.linear_model import LogisticRegression
@@ -29,20 +29,7 @@ def analyzeGlobalMeans(X, Y):
     print "Mean: {}, variance: {}".format(nonPDmean, nonPDvar)
     print "Mean: {}, variance: {}".format(PDmean, PDvar)
 
-
-def downsample(X, Y):
-	numPositive = sum(Y)
-	numNegative = len(Y) - numPositive
-	numRemoved, i = 0, 0
-	while numRemoved <= numPositive - numNegative:
-		if Y[i] == 1:
-			X.pop(i)
-			Y.pop(i)
-			numRemoved += 1
-		i = random.randint(0, len(Y)-1)
-	return X, Y
-
-# Run Logistic Regression and plot train and test errors
+# Run Logistic Regression and plot train and test error
 def plotTrainTest(clf, X, Y):	
 	trainingSizes = range(100, 250, 25)
 	trainErrors, testErrors = [], []
@@ -61,9 +48,8 @@ def plotTrainTest(clf, X, Y):
 		output = clf.predict(testX)
 		numWrong = sum([int(predicted != actual) for predicted, actual in zip(output, testY)])
 		numTotal = float(len(testY))
-		print sum(output), numTotal, float(sum(output))/numTotal
 		testErrors.append(numWrong/numTotal)
-
+    
 	pyplot.plot(trainingSizes, trainErrors, label="Training error")
 	pyplot.plot(trainingSizes, testErrors, label="Test error")
 	pyplot.legend()
@@ -72,23 +58,18 @@ def plotTrainTest(clf, X, Y):
 	pyplot.title('{} train and test error vs. training set size'.format(clf.__class__.__name__))
 	pyplot.show()
 
-def crossValidate(clf, X, Y):
-    scores = cross_val_score(clf, X, Y, cv=5)
-    accuracy = sum(scores) / len(scores)
-    print "Test accuracy for {}: {}, nFeatures: {}".format(clf.__class__.__name__, accuracy, len(X[0]))
-    return accuracy
+def cross_validate(clf, X, Y):
+    scores = cross_val_score(clf, X, Y, cv=10, scoring='roc_auc')
+    avgAuc = sum(scores)/float(len(scores))
+    print "Cross val score for {}: {}".format(clf.__class__.__name__, avgAuc)
+    return avgAuc
 
 def main():
     # Create feature and label vectors
     f = FeatureGen()
     X, Y = f.getXY()
-
-    nF = len(X[0])
-    subsetFeatures = forward_search(list(xrange(nF)), 10, cv_accuracy, [LogisticRegression(), X, Y])
-    print subsetFeatures
-    # analyzeMeans(X, Y)
-    plotTrainTest(LogisticRegression(), np.array(X)[:, subsetFeatures], Y)
-    #crossValidate(LogisticRegression(), X, Y)
+    plotTrainTest(LogisticRegression(class_weight='auto'), X, Y)
+    cross_validate(LogisticRegression(class_weight='auto'), X, Y)
 
 if __name__ == "__main__":
     main()

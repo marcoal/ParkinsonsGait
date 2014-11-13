@@ -1,7 +1,7 @@
 import math, os, random, sklearn
 import numpy as np
 import pandas as pd
-
+import pywt
 
 class FeatureGen:
 
@@ -54,15 +54,15 @@ class FeatureGen:
 		variance = np.var(strideLengths)
 		return [mean, variance]
 
-	def get_Wavelet_ApproxCoefficients(self, matrix, cropN):  # Currently just for L1
-        import pywt
-        l1_sensor = matrix[self.schema[1]]
-        cA, cD = pywt.dwt(l1_sensor, 'coif1')
-        return list(cA[:cropN])
+	def getWaveletApproxCoefficients(self, matrix, cropN):  # Currently just for L1
+		l1_sensor = matrix[self.schema[1]]
+		cA, cD = pywt.dwt(l1_sensor, 'coif1')
+		return list(cA[:cropN])
 
 	def getFeatures(self, matrix):
 		strideFeatures = self.getStrideFeatures(matrix)
 		sensorMeanFeatures = self.getSensorMeanFeatures(matrix)
+		return sensorMeanFeatures
 		return strideFeatures + sensorMeanFeatures
 
  	def getLabel(self, subjectId):
@@ -72,7 +72,7 @@ class FeatureGen:
 	def getXY(self):
 		self.loadGaitData()
 		self.loadDemographics()
-		self.normalizeSignals()
+		#self.normalizeSignals()
 
 		X, Y = [], []
 		for subjectId in sorted(self.gaitData.keys()):
@@ -85,5 +85,4 @@ class FeatureGen:
 		random.shuffle(XY)
 		X = [x for x, y in XY]
 		Y = [y for x, y in XY]
-		print Y
 		return X, Y

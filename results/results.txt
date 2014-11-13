@@ -1,10 +1,10 @@
 Log of changes:
 	-Plotted train and test errors to diagnose bias/variance
 	-Plotted foot sensor positions
-	-Baseline logistic regression on sensor means: 55.3% accuracy
-	-Removed serial 7 subjects (306 -> 279 total subjects)... 58.6%
-	-Normalize by weight... 61.4%
-	-Got stride time mean and variability... 69.1%... but predicts all 1's!
+	-Baseline logistic regression on global means: 56.7% AUC
+	-Baseline logistic regression on sensor means: 66.4% AUC
+	-Normalize by weight... 64.8% AUC... negligible effect
+	-Got stride time mean and variance... 71.6% AUC
 	-Wavelet decomposition (Marco)
 	-Fourier Transform (Kevin)
 	-Normalization (Daryl)
