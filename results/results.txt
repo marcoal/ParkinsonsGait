@@ -5,10 +5,14 @@ Log of changes:
 	-Baseline logistic regression on sensor means: 66.4% AUC
 	-Normalize by weight... 64.8% AUC... negligible effect
 	-Got stride time mean and variance... 71.6% AUC
-	-Wavelet decomposition (Marco)
-	-Fourier Transform (Kevin)
-	-Normalization (Daryl)
-		-Intra-group normalization (according to Tahir) helps?
+	-Included center of pressure measurements... 79.7% AUC
+
+Comparison of models:
+	Logistic regression - Training AUC: 77.2%, Test AUC: 76.2%
+	SVM with rbf kernel - Training AUC: 99.7%, Test AUC: 50%
+	SVM with linear kernel - Training AUC: 74.5%, Test AUC: 67.8%
+	Random Forest - Training AUC: 98.6%, Test AUC: 71.4%
+	Decision Tree - Training AUC: 99.7%, Test AUC: 73.0%
 
 
 Description of images and results:

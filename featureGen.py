@@ -8,6 +8,7 @@ class FeatureGen:
 	def __init__(self):
 		self.gaitData = {}
 		self.demographics = []
+		self.sensorPositions = {}
 		self.schema = [
 			'Time', 'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'R1', 'R2', 'R3',
          	'R4', 'R5', 'R6', 'R7', 'R8', 'Total Force Left', 'Total Force Right'
@@ -32,6 +33,15 @@ class FeatureGen:
 		df = df[df.columns.values[0:20]]  # Delete bs data due to extra tab delimited spaces
 		df = df[:166]                     # Delete nan columns
 		self.demographics = df
+
+	def loadSensorPositions(self):
+		lines = [line.strip('\n').split() for line in open('sensorPositions.txt').readlines()]
+		self.sensorPositions['x'] = []
+		self.sensorPositions['y'] = []
+		for key, x, y in lines:
+			if 'L' in key:
+				self.sensorPositions['x'].append(int(x))
+				self.sensorPositions['y'].append(int(y))
 
 	def normalizeSignals(self):
 		for subjectId in self.gaitData:
@@ -59,11 +69,20 @@ class FeatureGen:
 		cA, cD = pywt.dwt(l1_sensor, 'coif1')
 		return list(cA[:cropN])
 
+	def getCopFeatures(self, matrix):
+		xCops = []
+		yCops = []
+		leftXCops = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['x']), matrix['Total Force Left'])
+		leftYCops = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['y']), matrix['Total Force Left'])
+		leftXCops = leftXCops[np.isfinite(leftXCops)]
+		leftYCops = leftYCops[np.isfinite(leftYCops)]
+		return [np.mean(leftXCops), np.var(leftXCops), np.mean(leftYCops), np.var(leftYCops)]
+
 	def getFeatures(self, matrix):
 		strideFeatures = self.getStrideFeatures(matrix)
 		sensorMeanFeatures = self.getSensorMeanFeatures(matrix)
-		return sensorMeanFeatures
-		return strideFeatures + sensorMeanFeatures
+		copFeatures = self.getCopFeatures(matrix)
+		return strideFeatures + sensorMeanFeatures + copFeatures
 
  	def getLabel(self, subjectId):
 		group = int((self.demographics.loc[self.demographics['ID'] == subjectId]['Group']))
@@ -72,6 +91,7 @@ class FeatureGen:
 	def getXY(self):
 		self.loadGaitData()
 		self.loadDemographics()
+		self.loadSensorPositions()
 		#self.normalizeSignals()
 
 		X, Y = [], []

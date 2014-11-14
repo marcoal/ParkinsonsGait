@@ -11,12 +11,16 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.svm import SVC, LinearSVC
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.cross_validation import cross_val_score
 from sklearn.linear_model import LogisticRegression
 
 # Analyze mean force for each sensor
-def analyzeSensorMeans(X, Y):
-    print np.mean(X, axis=0)
+def analyzeFeatureMeans(X, Y):
+    posX = [x for x,y in zip(X,Y) if y == 1]
+    negX = [x for x,y in zip(X,Y) if y == 0]
+    print 'PD means: {}'.format(np.mean(posX, axis=0))
+    print 'Non-PD means: {}'.format(np.mean(negX, axis=0))
 
 
 # Analyze mean force for PD and nonPD subjects
@@ -49,7 +53,7 @@ def plotTrainTest(clf, X, Y):
 		numWrong = sum([int(predicted != actual) for predicted, actual in zip(output, testY)])
 		numTotal = float(len(testY))
 		testErrors.append(numWrong/numTotal)
-    
+
 	pyplot.plot(trainingSizes, trainErrors, label="Training error")
 	pyplot.plot(trainingSizes, testErrors, label="Test error")
 	pyplot.legend()
@@ -58,18 +62,36 @@ def plotTrainTest(clf, X, Y):
 	pyplot.title('{} train and test error vs. training set size'.format(clf.__class__.__name__))
 	pyplot.show()
 
+def getTrainTestAUC(clf, X, Y):
+    trainX, testX, trainY, testY = train_test_split(X, Y, test_size=0.2, random_state=0)
+    clf.fit(trainX, trainY)
+
+    # Training AUC
+    output = clf.predict(trainX)
+    trainingAUC = roc_auc_score(trainY, output)
+
+    # Test AUC
+    output = clf.predict(testX)
+    testAUC = roc_auc_score(testY, output)
+
+    print "Training AUC: {}, Test AUC: {}".format(trainingAUC, testAUC)
+    return trainingAUC, testAUC 
+
+
 def cross_validate(clf, X, Y):
     scores = cross_val_score(clf, X, Y, cv=10, scoring='roc_auc')
     avgAuc = sum(scores)/float(len(scores))
-    print "Cross val score for {}: {}".format(clf.__class__.__name__, avgAuc)
-    return avgAuc
+    print "Cross val AUC score for {}: {}".format(clf.__class__.__name__, avgAuc)
+    # scores = cross_val_score(clf, X, Y, cv=10)
+    # avgAccuracy = sum(scores)/float(len(scores))
+    # print "Cross val accuracy score for {}: {}".format(clf.__class__.__name__, avgAccuracy)
 
 def main():
     # Create feature and label vectors
     f = FeatureGen()
     X, Y = f.getXY()
-    plotTrainTest(LogisticRegression(class_weight='auto'), X, Y)
-    cross_validate(LogisticRegression(class_weight='auto'), X, Y)
+    # analyzeFeatureMeans(X, Y)
+    getTrainTestAUC(DecisionTreeClassifier(), X, Y)
 
 if __name__ == "__main__":
     main()
