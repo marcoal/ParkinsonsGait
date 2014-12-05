@@ -59,8 +59,7 @@ class FeatureGen:
 	def getSensorMeanFeatures(self, matrix):
 		return [1] + matrix[self.schema[1:]].mean().values.tolist()
 
-	# Helper function to segment a signal into swing and stride phases
-	def segmentGait(self, matrix):
+	def segmentGaitOld(self, matrix):
 		epsilon = 100
 		shiftedSignal = np.subtract(matrix['Total Force Left'], epsilon)
 		leftStances = np.where(np.diff(np.sign(shiftedSignal)) > 0)
@@ -72,58 +71,85 @@ class FeatureGen:
 		
 		return leftStances, leftSwings, rightStances, rightSwings
 
-	# def getSwingFeaturesOld(self, matrix):
-	# 	diff = matrix['Total Force Left'] - matrix['Total Force Right']
-	# 	zeroCrossings = np.where(np.diff(np.sign(diff)))[0]
-	# 	swingTimes = np.diff(zeroCrossings)
-	# 	mean = np.mean(swingTimes)
-	# 	variance = np.var(swingTimes)
-	# 	return [mean, variance]
+	# Helper function to segment a signal into swing and stride phases
+	def segmentGaitNew(self, matrix):
+		epsilon = 100
+		shiftedSignal = np.subtract(matrix['Total Force Left'], epsilon)
+		leftStances = np.where(np.diff(np.sign(shiftedSignal)) > 0)[0]
+		leftStances = [('Stance', time) for time in leftStances]
+		leftSwings = np.where(np.diff(np.sign(shiftedSignal)) < 0)[0]
+		leftSwings = [('Swing', time) for time in leftSwings]
+		leftPhases = sorted(leftStances + leftSwings, key=lambda x:x[1])
 
-	# Averaging stance and swing individually gives 0.765 AUC
-	# def getStrideFeatures(self, matrix):
-		# stanceTimes, swingTimes = [], []
-		# leftPhases, rightPhases = self.segmentGait(matrix)
-		# leftDiffs = np.diff([time for phase, time in leftPhases])[0]
-		# stanceTimes = np.concatenate((stanceTimes, leftDiffs[::2]))
-		# swingTimes = np.concatenate((swingTimes, leftDiffs[1::2]))
-		
-		# rightDiffs = np.diff([time for phase, time in rightPhases])[0]
-		# stanceTimes = np.concatenate((stanceTimes, rightDiffs[::2]), axis=1)
-		# swingTimes = np.concatenate((swingTimes, rightDiffs[1::2]), axis=1)
-		
-		# return [np.mean(stanceTimes), np.var(stanceTimes), np.mean(swingTimes), np.var(swingTimes)]
 
-	# Using actual definition of swing and stance time, for both right and left
-	def getSwingFeaturesNew(self, matrix):
-		leftStances, leftSwings, rightStances, rightSwings = self.segmentGait(matrix)
+		shiftedSignal = np.subtract(matrix['Total Force Right'], epsilon)
+		rightStances = np.where(np.diff(np.sign(shiftedSignal)) > 0)[0]
+		rightStances = [('Stance', time) for time in rightStances]
+		rightSwings = np.where(np.diff(np.sign(shiftedSignal)) < 0)[0]
+		rightSwings = [('Swing', time) for time in rightSwings]
+		rightPhases = sorted(rightStances + rightSwings, key=lambda x:x[1])
+
+		return leftPhases, rightPhases
+
+	# Calculates mean and variance of phase times based on balance
+	def getBalancePhaseTimes(self, matrix):
+		diff = matrix['Total Force Left'] - matrix['Total Force Right']
+		zeroCrossings = np.where(np.diff(np.sign(diff)))[0]
+		phaseTimes = np.diff(zeroCrossings)
+		mean = np.mean(phaseTimes)
+		variance = np.var(phaseTimes)
+		return [mean, variance]
+		
+	# Calculates mean and variance of phase times based on when signal crosses epsilon
+	def getPhaseTimes(self, matrix):
+		leftStances, leftSwings, rightStances, rightSwings = self.segmentGaitOld(matrix)
 		leftTimes = np.diff(sorted(np.concatenate((leftStances + leftSwings), axis=1)))
 		rightTimes = np.diff(sorted(np.concatenate((rightStances + rightSwings), axis=1)))
-		
+
 		return [np.mean(leftTimes), np.var(leftTimes), np.mean(rightTimes), np.var(rightTimes)]
+
+	# Using actual definition of swing and stance time, for both right and left
+	def getStrideFeatures(self, matrix):
+		stanceTimes, swingTimes = [], []
+		leftPhases, rightPhases = self.segmentGaitNew(matrix)
+		leftDiffs = np.diff([time for phase, time in leftPhases])
+		leftStanceTimes = leftDiffs[::2] if leftPhases[0][0] == 'Stance' else leftDiffs[1::2]
+		leftSwingTimes = leftDiffs[1::2] if leftPhases[0][0] == 'Stance' else leftDiffs[::2]
+		stanceTimes = np.concatenate((stanceTimes, leftStanceTimes))
+		swingTimes = np.concatenate((swingTimes, leftSwingTimes))
+	
+		rightDiffs = np.diff([time for phase, time in rightPhases])
+		rightStanceTimes = rightDiffs[::2] if rightPhases[0][0] == 'Stance' else rightDiffs[1::2]
+		rightSwingTimes = rightDiffs[1::2] if rightPhases[0][0] == 'Stance' else rightDiffs[::2]
+		stanceTimes = np.concatenate((stanceTimes, rightStanceTimes))
+		swingTimes = np.concatenate((swingTimes, rightSwingTimes))
+		
+		return [np.mean(stanceTimes), np.var(stanceTimes), np.mean(swingTimes), np.var(swingTimes)]
 
 	def getWaveletApproxCoefficients(self, matrix, cropN):  # Currently just for L1
 		l1_sensor = matrix[self.schema[1]]
 		cA, cD = pywt.dwt(l1_sensor, 'coif1')
 		return list(cA[:cropN])
 
+	# Calculates center of pressure without using segmentation
 	def getCopFeaturesOld(self, matrix):
-		xCops = []
-		yCops = []
+		xCops, yCops = [], []
 		leftXCops = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['x']), matrix['Total Force Left'])
 		leftYCops = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['y']), matrix['Total Force Left'])
 		leftXCops = leftXCops[np.isfinite(leftXCops)]
 		leftYCops = leftYCops[np.isfinite(leftYCops)]
 		return [np.mean(leftXCops), np.var(leftXCops), np.mean(leftYCops), np.var(leftYCops)]
 
+	# Calculates the heel strike
 	def getCopFeaturesNew(self, matrix):
-		self.segmentGait(matrix)
+		leftStances, leftSwings, rightStances, rightSwings = self.segmentGaitNew(matrix)
+		
 
 	def getFeatures(self, matrix):
-		swingFeatures = self.getSwingFeaturesNew(matrix)
+		strideFeatures = self.getStrideFeatures(matrix)
 		sensorMeanFeatures = self.getSensorMeanFeatures(matrix)
 		copFeatures = self.getCopFeaturesOld(matrix)
-		return swingFeatures + sensorMeanFeatures + copFeatures
+		return strideFeatures + sensorMeanFeatures + copFeatures
 
  	def getLabel(self, subjectId):
 		group = int((self.demographics.loc[self.demographics['ID'] == subjectId]['Group']))
