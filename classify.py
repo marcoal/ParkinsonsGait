@@ -1,6 +1,6 @@
 from featureGen import FeatureGen
-from featureSelect import forward_search
-from featureSelect import cv_accuracy
+from featureSelect import *
+from math import ceil
 from matplotlib import pyplot
 import numpy as np
 from numpy.linalg import inv
@@ -91,12 +91,28 @@ def main():
     f = FeatureGen()
     # Binary classification
     X, Y = f.getXY(classifier='PD')
-    cross_validate_AUC(LogisticRegression(class_weight='auto'), X, Y)
-    cross_validate_accuracy(LogisticRegression(class_weight='auto'), X, Y)
+    Y = np.asarray(Y)
+    #cross_validate_AUC(LogisticRegression(class_weight='auto'), X, Y)
+    nfeatures = len(X[0])
+
+    max = 0
+    best_sub = []
+    for i in range(1, nfeatures):
+        feat_sub = forward_search(nfeatures, i, tst_auc, [LogisticRegression(class_weight='auto'), X, Y])
+        current = tst_auc(feat_sub, LogisticRegression(class_weight='auto'), X, Y)
+        if current > max:
+            max = current
+            best_sub = feat_sub
+
+    print best_sub
+    print "Best Accuracy:{} + , X, Y)".format(max)
+    print f.getFeatures_names()[best_sub]
+
+    #cross_validate_accuracy(LogisticRegression(class_weight='auto'), X, Y)
 
     # Severity classification
-    X, Y = f.getXY(classifier='severity')
-    cross_validate_accuracy(LogisticRegression(class_weight='auto'), X, Y)
+    #X, Y = f.getXY(classifier='severity')
+    #cross_validate_accuracy(LogisticRegression(class_weight='auto'), X, Y)
     
 
 if __name__ == "__main__":
