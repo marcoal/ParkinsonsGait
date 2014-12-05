@@ -131,25 +131,45 @@ class FeatureGen:
 		cA, cD = pywt.dwt(l1_sensor, 'coif1')
 		return list(cA[:cropN])
 
+	def calculateCops(self, matrix):
+		leftCopsX = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['x']), matrix['Total Force Left'])
+		leftCopsY = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['y']), matrix['Total Force Left'])
+		rightCopsX = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['x']), matrix['Total Force Left'])
+		rightCopsY = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['y']), matrix['Total Force Left'])
+
+		leftCopsX[np.logical_not(np.isfinite(leftCopsX))] = 0. 
+		leftCopsY[np.logical_not(np.isfinite(leftCopsY))] = 0.
+		rightCopsX[np.logical_not(np.isfinite(rightCopsX))] = 0. 
+		rightCopsY[np.logical_not(np.isfinite(rightCopsY))] = 0.
+
+		return leftCopsX, leftCopsY, rightCopsX, rightCopsY
+
 	# Calculates center of pressure without using segmentation
 	def getCopFeaturesOld(self, matrix):
-		xCops, yCops = [], []
-		leftXCops = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['x']), matrix['Total Force Left'])
-		leftYCops = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['y']), matrix['Total Force Left'])
-		leftXCops = leftXCops[np.isfinite(leftXCops)]
-		leftYCops = leftYCops[np.isfinite(leftYCops)]
-		return [np.mean(leftXCops), np.var(leftXCops), np.mean(leftYCops), np.var(leftYCops)]
+		leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
+		return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
 
 	# Calculates the heel strike
 	def getCopFeaturesNew(self, matrix):
-		leftStances, leftSwings, rightStances, rightSwings = self.segmentGaitNew(matrix)
-		
+		leftPhases, rightPhases = self.segmentGaitNew(matrix)
+		leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
+
+		leftHeelStrikeXs = [leftCopsX[time] for phase, time in leftPhases if phase == 'Stance']
+		leftHeelStrikeYs = [leftCopsY[time] for phase, time in leftPhases if phase == 'Stance']
+		rightHeelStrikeXs = [rightCopsX[time] for phase, time in rightPhases if phase == 'Stance']
+		rightHeelStrikeYs = [rightCopsY[time] for phase, time in rightPhases if phase == 'Stance']
+		features = [np.mean(leftHeelStrikeXs), np.mean(leftHeelStrikeYs), 
+					np.mean(rightHeelStrikeXs), np.mean(rightHeelStrikeYs),
+					np.var(leftHeelStrikeXs), np.var(leftHeelStrikeYs), 
+					np.var(rightHeelStrikeXs), np.var(rightHeelStrikeYs)]
+		return features
 
 	def getFeatures(self, matrix):
 		strideFeatures = self.getStrideFeatures(matrix)
 		sensorMeanFeatures = self.getSensorMeanFeatures(matrix)
-		copFeatures = self.getCopFeaturesOld(matrix)
-		return strideFeatures + sensorMeanFeatures + copFeatures
+		oldCopFeatures = self.getCopFeaturesOld(matrix)
+		newCopFeatures = self.getCopFeaturesNew(matrix)
+		return strideFeatures + sensorMeanFeatures + oldCopFeatures + newCopFeatures
 
  	def getLabel(self, subjectId):
 		group = int((self.demographics.loc[self.demographics['ID'] == subjectId]['Group']))
