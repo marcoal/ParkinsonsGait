@@ -90,8 +90,10 @@ def main():
     # Create feature and label vectors
     f = FeatureGen()
     X, Y = f.getXY()
+    cross_validate(LogisticRegression(class_weight='auto'), X, Y)
+    #plotTrainTest(LogisticRegression(class_weight='auto'), X, Y)
     # analyzeFeatureMeans(X, Y)
-    getTrainTestAUC(DecisionTreeClassifier(), X, Y)
+    #getTrainTestAUC(DecisionTreeClassifier(), X, Y)
 
 if __name__ == "__main__":
     main()
