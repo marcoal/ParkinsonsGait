@@ -134,8 +134,8 @@ class FeatureGen:
 	def calculateCops(self, matrix):
 		leftCopsX = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['x']), matrix['Total Force Left'])
 		leftCopsY = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['y']), matrix['Total Force Left'])
-		rightCopsX = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['x']), matrix['Total Force Left'])
-		rightCopsY = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['y']), matrix['Total Force Left'])
+		rightCopsX = np.divide(matrix[self.schema[9:18]].dot(self.sensorPositions['x']), matrix['Total Force Right'])
+		rightCopsY = np.divide(matrix[self.schema[9:18]].dot(self.sensorPositions['y']), matrix['Total Force Right'])
 
 		leftCopsX[np.logical_not(np.isfinite(leftCopsX))] = 0. 
 		leftCopsY[np.logical_not(np.isfinite(leftCopsY))] = 0.
@@ -146,13 +146,16 @@ class FeatureGen:
 
 	# Calculates center of pressure without using segmentation
 	def getCopAgg(self, matrix):
-		leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
-		return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
+		# leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
+		# return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
 
 		# TODO: Calculate cop using segmentation
-		# leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
-		# leftPhases, rightPhases = self.segmentGaitNew(matrix)
-		# return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
+		leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
+		leftPhases, rightPhases = self.segmentGaitNew(matrix)
+		return [np.mean(leftCopsX), np.var(leftCopsX), 
+				np.mean(leftCopsY), np.var(leftCopsY),
+				np.mean(rightCopsX), np.var(rightCopsX),
+				np.mean(rightCopsY), np.var(rightCopsY)]
 
 	# Calculates the heel strike
 	def getHeelStrike(self, matrix):
