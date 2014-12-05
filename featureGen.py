@@ -145,12 +145,17 @@ class FeatureGen:
 		return leftCopsX, leftCopsY, rightCopsX, rightCopsY
 
 	# Calculates center of pressure without using segmentation
-	def getCopFeaturesOld(self, matrix):
+	def getCopAgg(self, matrix):
+		# leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
+		# return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
+
+		# TODO: Calculate cop using segmentation
 		leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
+		leftPhases, rightPhases = self.segmentGaitNew(matrix)
 		return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
 
 	# Calculates the heel strike
-	def getCopFeaturesNew(self, matrix):
+	def getHeelStrike(self, matrix):
 		leftPhases, rightPhases = self.segmentGaitNew(matrix)
 		leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
 
@@ -168,7 +173,7 @@ class FeatureGen:
 		strideFeatures = self.getStrideFeatures(matrix)
 		sensorMeanFeatures = self.getSensorMeanFeatures(matrix)
 		oldCopFeatures = self.getCopFeaturesOld(matrix)
-		newCopFeatures = self.getCopFeaturesNew(matrix)
+		heelStrikeFeatures = self.getHeelStrike(matrix)
 		return strideFeatures + sensorMeanFeatures + oldCopFeatures + newCopFeatures
 
  	def getLabel(self, subjectId):
