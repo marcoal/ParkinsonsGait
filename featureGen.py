@@ -16,7 +16,6 @@ class FeatureGen:
 
 	def loadGaitData(self):
 		for filename in os.listdir('data'):
-			#if filename == 'GaCo01_01.txt':
 			key, walkNumber = filename.split('_')
 			print filename
 
@@ -207,17 +206,30 @@ class FeatureGen:
 		group = int((self.demographics.loc[self.demographics['ID'] == subjectId]['Group']))
 		return int(group == 1)
 
-	def getXY(self):
+	def getSeverity(self, subjectId):
+		severity = float((self.demographics.loc[self.demographics['ID'] == subjectId]['HoehnYahr']))
+		return int(severity*2)
+
+	def getXY(self, classifier):
 		self.loadGaitData()
 		self.loadDemographics()
 		self.loadSensorPositions()
 		#self.normalizeSignals()
 
 		X, Y = [], []
-		for subjectId in sorted(self.gaitData.keys()):
-			for matrix in self.gaitData[subjectId]:
-				X.append(self.getFeatures(matrix))
-				Y.append(self.getLabel(subjectId))
+
+		if classifier == 'PD':
+			for subjectId in sorted(self.gaitData.keys()):
+				for matrix in self.gaitData[subjectId]:
+					X.append(self.getFeatures(matrix))
+					Y.append(self.getLabel(subjectId))
+
+		elif classifier == 'severity':
+			for subjectId in sorted(self.gaitData.keys()):
+				if self.getLabel(subjectId) == 1:
+					for matrix in self.gaitData[subjectId]:
+						X.append(self.getFeatures(matrix))
+						Y.append(self.getSeverity(subjectId))
 
 		# Randomize X and Y to improve accuracy estimations
 		XY = zip(X, Y)

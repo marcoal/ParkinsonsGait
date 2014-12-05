@@ -77,19 +77,26 @@ def getTrainTestAUC(clf, X, Y):
     print "Training AUC: {}, Test AUC: {}".format(trainingAUC, testAUC)
     return trainingAUC, testAUC 
 
-def cross_validate(clf, X, Y):
+def cross_validate_AUC(clf, X, Y):
     scores = cross_val_score(clf, X, Y, cv=10, scoring='roc_auc')
     avgAuc = sum(scores)/float(len(scores))
     print "Cross val AUC score for {}: {}".format(clf.__class__.__name__, avgAuc)
+    
+def cross_validate_accuracy(clf, X, Y):
     scores = cross_val_score(clf, X, Y, cv=10)
     avgAccuracy = sum(scores)/float(len(scores))
     print "Cross val accuracy score for {}: {}".format(clf.__class__.__name__, avgAccuracy)
 
 def main():
-    # Create feature and label vectors
     f = FeatureGen()
-    X, Y = f.getXY()
-    cross_validate(LogisticRegression(class_weight='auto'), X, Y)
+    # Binary classification
+    X, Y = f.getXY(classifier='PD')
+    cross_validate_AUC(LogisticRegression(class_weight='auto'), X, Y)
+    cross_validate_accuracy(LogisticRegression(class_weight='auto'), X, Y)
+
+    # Severity classification
+    X, Y = f.getXY(classifier='severity')
+    cross_validate_accuracy(LogisticRegression(class_weight='auto'), X, Y)
     
 
 if __name__ == "__main__":
