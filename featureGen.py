@@ -146,13 +146,13 @@ class FeatureGen:
 
 	# Calculates center of pressure without using segmentation
 	def getCopAgg(self, matrix):
-		# leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
-		# return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
+		leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
+		return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
 
 		# TODO: Calculate cop using segmentation
-		leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
-		leftPhases, rightPhases = self.segmentGaitNew(matrix)
-		return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
+		# leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
+		# leftPhases, rightPhases = self.segmentGaitNew(matrix)
+		# return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
 
 	# Calculates the heel strike
 	def getHeelStrike(self, matrix):
@@ -172,9 +172,9 @@ class FeatureGen:
 	def getFeatures(self, matrix):
 		strideFeatures = self.getStrideFeatures(matrix)
 		sensorMeanFeatures = self.getSensorMeanFeatures(matrix)
-		oldCopFeatures = self.getCopFeaturesOld(matrix)
+		copAggFeatures = self.getCopAgg(matrix)
 		heelStrikeFeatures = self.getHeelStrike(matrix)
-		return strideFeatures + sensorMeanFeatures + oldCopFeatures + newCopFeatures
+		return strideFeatures + sensorMeanFeatures + copAggFeatures + heelStrikeFeatures
 
  	def getLabel(self, subjectId):
 		group = int((self.demographics.loc[self.demographics['ID'] == subjectId]['Group']))
