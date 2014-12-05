@@ -82,9 +82,9 @@ def cross_validate(clf, X, Y):
     scores = cross_val_score(clf, X, Y, cv=10, scoring='roc_auc')
     avgAuc = sum(scores)/float(len(scores))
     print "Cross val AUC score for {}: {}".format(clf.__class__.__name__, avgAuc)
-    # scores = cross_val_score(clf, X, Y, cv=10)
-    # avgAccuracy = sum(scores)/float(len(scores))
-    # print "Cross val accuracy score for {}: {}".format(clf.__class__.__name__, avgAccuracy)
+    scores = cross_val_score(clf, X, Y, cv=10)
+    avgAccuracy = sum(scores)/float(len(scores))
+    print "Cross val accuracy score for {}: {}".format(clf.__class__.__name__, avgAccuracy)
 
 def main():
     # Create feature and label vectors
