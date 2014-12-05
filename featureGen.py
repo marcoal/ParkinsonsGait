@@ -16,7 +16,10 @@ class FeatureGen:
 
 	def loadGaitData(self):
 		for filename in os.listdir('data'):
+			#if filename == 'GaCo01_01.txt':
 			key, walkNumber = filename.split('_')
+			print filename
+
 			# Process data only for non-serial 7 subjects
 			if '10' not in walkNumber:
 				filename = os.path.join('data', filename)
@@ -56,20 +59,55 @@ class FeatureGen:
 	def getSensorMeanFeatures(self, matrix):
 		return [1] + matrix[self.schema[1:]].mean().values.tolist()
 
-	def getStrideFeatures(self, matrix):
-		diff = matrix['Total Force Left'] - matrix['Total Force Right']
-		zeroCrossings = np.where(np.diff(np.sign(diff)))[0]
-		strideLengths = np.diff(zeroCrossings)
-		mean = np.mean(strideLengths)
-		variance = np.var(strideLengths)
-		return [mean, variance]
+	# Helper function to segment a signal into swing and stride phases
+	def segmentGait(self, matrix):
+		epsilon = 100
+		shiftedSignal = np.subtract(matrix['Total Force Left'], epsilon)
+		leftStances = np.where(np.diff(np.sign(shiftedSignal)) > 0)
+		leftSwings = np.where(np.diff(np.sign(shiftedSignal)) < 0)
+
+		shiftedSignal = np.subtract(matrix['Total Force Right'], epsilon)
+		rightStances = np.where(np.diff(np.sign(shiftedSignal)) > 0)
+		rightSwings = np.where(np.diff(np.sign(shiftedSignal)) < 0)
+		
+		return leftStances, leftSwings, rightStances, rightSwings
+
+	# def getSwingFeaturesOld(self, matrix):
+	# 	diff = matrix['Total Force Left'] - matrix['Total Force Right']
+	# 	zeroCrossings = np.where(np.diff(np.sign(diff)))[0]
+	# 	swingTimes = np.diff(zeroCrossings)
+	# 	mean = np.mean(swingTimes)
+	# 	variance = np.var(swingTimes)
+	# 	return [mean, variance]
+
+	# Averaging stance and swing individually gives 0.765 AUC
+	# def getStrideFeatures(self, matrix):
+		# stanceTimes, swingTimes = [], []
+		# leftPhases, rightPhases = self.segmentGait(matrix)
+		# leftDiffs = np.diff([time for phase, time in leftPhases])[0]
+		# stanceTimes = np.concatenate((stanceTimes, leftDiffs[::2]))
+		# swingTimes = np.concatenate((swingTimes, leftDiffs[1::2]))
+		
+		# rightDiffs = np.diff([time for phase, time in rightPhases])[0]
+		# stanceTimes = np.concatenate((stanceTimes, rightDiffs[::2]), axis=1)
+		# swingTimes = np.concatenate((swingTimes, rightDiffs[1::2]), axis=1)
+		
+		# return [np.mean(stanceTimes), np.var(stanceTimes), np.mean(swingTimes), np.var(swingTimes)]
+
+	# Using actual definition of swing and stance time, for both right and left
+	def getSwingFeaturesNew(self, matrix):
+		leftStances, leftSwings, rightStances, rightSwings = self.segmentGait(matrix)
+		leftTimes = np.diff(sorted(np.concatenate((leftStances + leftSwings), axis=1)))
+		rightTimes = np.diff(sorted(np.concatenate((rightStances + rightSwings), axis=1)))
+		
+		return [np.mean(leftTimes), np.var(leftTimes), np.mean(rightTimes), np.var(rightTimes)]
 
 	def getWaveletApproxCoefficients(self, matrix, cropN):  # Currently just for L1
 		l1_sensor = matrix[self.schema[1]]
 		cA, cD = pywt.dwt(l1_sensor, 'coif1')
 		return list(cA[:cropN])
 
-	def getCopFeatures(self, matrix):
+	def getCopFeaturesOld(self, matrix):
 		xCops = []
 		yCops = []
 		leftXCops = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['x']), matrix['Total Force Left'])
@@ -78,11 +116,14 @@ class FeatureGen:
 		leftYCops = leftYCops[np.isfinite(leftYCops)]
 		return [np.mean(leftXCops), np.var(leftXCops), np.mean(leftYCops), np.var(leftYCops)]
 
+	def getCopFeaturesNew(self, matrix):
+		self.segmentGait(matrix)
+
 	def getFeatures(self, matrix):
-		strideFeatures = self.getStrideFeatures(matrix)
+		swingFeatures = self.getSwingFeaturesNew(matrix)
 		sensorMeanFeatures = self.getSensorMeanFeatures(matrix)
-		copFeatures = self.getCopFeatures(matrix)
-		return strideFeatures + sensorMeanFeatures + copFeatures
+		copFeatures = self.getCopFeaturesOld(matrix)
+		return swingFeatures + sensorMeanFeatures + copFeatures
 
  	def getLabel(self, subjectId):
 		group = int((self.demographics.loc[self.demographics['ID'] == subjectId]['Group']))
