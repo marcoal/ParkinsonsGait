@@ -77,7 +77,6 @@ def getTrainTestAUC(clf, X, Y):
     print "Training AUC: {}, Test AUC: {}".format(trainingAUC, testAUC)
     return trainingAUC, testAUC 
 
-
 def cross_validate(clf, X, Y):
     scores = cross_val_score(clf, X, Y, cv=10, scoring='roc_auc')
     avgAuc = sum(scores)/float(len(scores))
@@ -91,9 +90,7 @@ def main():
     f = FeatureGen()
     X, Y = f.getXY()
     cross_validate(LogisticRegression(class_weight='auto'), X, Y)
-    #plotTrainTest(LogisticRegression(class_weight='auto'), X, Y)
-    # analyzeFeatureMeans(X, Y)
-    #getTrainTestAUC(DecisionTreeClassifier(), X, Y)
+    
 
 if __name__ == "__main__":
     main()

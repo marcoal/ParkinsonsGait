@@ -134,8 +134,8 @@ class FeatureGen:
 	def calculateCops(self, matrix):
 		leftCopsX = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['x']), matrix['Total Force Left'])
 		leftCopsY = np.divide(matrix[self.schema[1:9]].dot(self.sensorPositions['y']), matrix['Total Force Left'])
-		rightCopsX = np.divide(matrix[self.schema[9:18]].dot(self.sensorPositions['x']), matrix['Total Force Right'])
-		rightCopsY = np.divide(matrix[self.schema[9:18]].dot(self.sensorPositions['y']), matrix['Total Force Right'])
+		rightCopsX = np.divide(matrix[self.schema[9:17]].dot(self.sensorPositions['x']), matrix['Total Force Right'])
+		rightCopsY = np.divide(matrix[self.schema[9:17]].dot(self.sensorPositions['y']), matrix['Total Force Right'])
 
 		leftCopsX[np.logical_not(np.isfinite(leftCopsX))] = 0. 
 		leftCopsY[np.logical_not(np.isfinite(leftCopsY))] = 0.
@@ -146,16 +146,40 @@ class FeatureGen:
 
 	# Calculates center of pressure without using segmentation
 	def getCopAgg(self, matrix):
+		# Method 1: Naively calculate cops without segmentation
 		# leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
 		# return [np.mean(leftCopsX), np.var(leftCopsX), np.mean(leftCopsY), np.var(leftCopsY)]
 
-		# TODO: Calculate cop using segmentation
+		# Method 2: Calculate cop using segmentation, left foot only
+		# leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
+		# leftPhases, rightPhases = self.segmentGaitNew(matrix)
+
+		# leftStanceIntervals = [(time1, time2) for (phase1, time1), (phase2, time2) in zip(leftPhases, leftPhases[1:]) if phase1 == 'Stance']
+		# leftIndices = []
+		# for start, end in leftStanceIntervals:
+		# 	leftIndices += range(start, end)
+
+		# return [np.mean(leftCopsX[leftIndices]), np.var(leftCopsX[leftIndices]),
+		# 		np.mean(leftCopsY[leftIndices]), np.var(leftCopsY[leftIndices])]
+
+		# Method 3: Calculate cop using segmentation, both feet
 		leftCopsX, leftCopsY, rightCopsX, rightCopsY = self.calculateCops(matrix)
 		leftPhases, rightPhases = self.segmentGaitNew(matrix)
-		return [np.mean(leftCopsX), np.var(leftCopsX), 
-				np.mean(leftCopsY), np.var(leftCopsY),
-				np.mean(rightCopsX), np.var(rightCopsX),
-				np.mean(rightCopsY), np.var(rightCopsY)]
+
+		leftStanceIntervals = [(time1, time2) for (phase1, time1), (phase2, time2) in zip(leftPhases, leftPhases[1:]) if phase1 == 'Stance']
+		leftIndices = []
+		for start, end in leftStanceIntervals:
+			leftIndices += range(start, end)
+
+		rightStanceIntervals = [(time1, time2) for (phase1, time1), (phase2, time2) in zip(rightPhases, rightPhases[1:]) if phase1 == 'Stance']
+		rightIndices = []
+		for start, end in rightStanceIntervals:
+			rightIndices += range(start, end)
+
+		return [np.mean(leftCopsX[leftIndices]), np.var(leftCopsX[leftIndices]),
+				np.mean(leftCopsY[leftIndices]), np.var(leftCopsY[leftIndices]),
+				np.mean(rightCopsX[rightIndices]), np.var(rightCopsX[rightIndices]),
+				np.mean(rightCopsY[rightIndices]), np.var(rightCopsY[rightIndices])]
 
 	# Calculates the heel strike
 	def getHeelStrike(self, matrix):
