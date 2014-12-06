@@ -6,6 +6,7 @@ import numpy as np
 from numpy.linalg import inv
 import random
 import sklearn
+from sklearn.preprocessing import label_binarize
 from sklearn.cross_validation import cross_val_score, train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -62,6 +63,26 @@ def plotTrainTest(clf, X, Y):
 	pyplot.title('{} train and test error vs. training set size'.format(clf.__class__.__name__))
 	pyplot.show()
 
+def getTrainTestError(clf, X, Y):
+    i = int(len(X * 0.9))
+    trainX, testX = X[:i], X[i:]
+    trainY, testY = Y[:i], Y[i:]
+    clf.fit(trainX, trainY)
+    
+    # Training error
+    output = clf.predict(trainX)
+    numWrong = sum([int(predicted != actual) for predicted, actual in zip(output, trainY)])
+    numTotal = float(len(trainY))
+    trainError = numWrong/numTotal
+
+    # Test error
+    output = clf.predict(testX)
+    numWrong = sum([int(predicted != actual) for predicted, actual in zip(output, testY)])
+    numTotal = float(len(testY))
+    testError = numWrong/numTotal
+
+    print "Training error: {}, Test error: {}".format(trainError, testError)
+
 def getTrainTestAUC(clf, X, Y):
     trainX, testX, trainY, testY = train_test_split(X, Y, test_size=0.2, random_state=0)
     clf.fit(trainX, trainY)
@@ -90,13 +111,14 @@ def cross_validate_accuracy(clf, X, Y):
 def main():
     f = FeatureGen()
     # Binary classification
-    X, Y = f.getXY(classifier='PD')
-    cross_validate_AUC(LogisticRegression(class_weight='auto'), X, Y)
-    cross_validate_accuracy(LogisticRegression(class_weight='auto'), X, Y)
+    # X, Y = f.getXY(classifier='PD')
+    # cross_validate_AUC(LinearSVC(class_weight='auto'), X, Y)
+    # cross_validate_accuracy(LinearSVC(class_weight='auto'), X, Y)
 
     # Severity classification
     X, Y = f.getXY(classifier='severity')
-    cross_validate_accuracy(LogisticRegression(class_weight='auto'), X, Y)
+    cross_validate_accuracy(LinearSVC(class_weight='auto'), X, Y)
+    cross_validate_AUC(LinearSVC(class_weight='auto'), X, label_binarize(Y, classes=list(set(Y))))
     
 
 if __name__ == "__main__":
