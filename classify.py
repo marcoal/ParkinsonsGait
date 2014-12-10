@@ -1,6 +1,6 @@
 from featureGen import FeatureGen
-from featureSelect import forward_search
-from featureSelect import cv_accuracy
+from featureSelect import *
+from math import ceil
 from matplotlib import pyplot
 import numpy as np
 from numpy.linalg import inv
@@ -10,7 +10,10 @@ from sklearn.preprocessing import label_binarize
 from sklearn.cross_validation import cross_val_score, train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import f1_score, roc_auc_score
+from sklearn.metrics import f1_score, roc_auc_score, auc, roc_curve
+from sklearn.preprocessing import label_binarize
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.metrics import precision_score, recall_score
 from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.cross_validation import cross_val_score
@@ -108,18 +111,66 @@ def cross_validate_accuracy(clf, X, Y):
     avgAccuracy = sum(scores)/float(len(scores))
     print "Cross val accuracy score for {}: {}".format(clf.__class__.__name__, avgAccuracy)
 
+def get_precision_recall(clf, X, Y):
+    precisions = []
+    recalls = []
+    for i in range(10):
+        trainX, testX, trainY, testY = train_test_split(X, Y, test_size=0.1, random_state=0)
+        clf.fit(trainX, trainY)
+
+        # Test precision and recall
+        output = clf.predict(testX)
+        precisions.append(precision_score(testY, output))
+        recalls.append(recall_score(testY, output))
+
+    avgPrecision = sum(precisions)/len(precisions)
+    avgRecall = sum(recalls)/len(recalls)
+
+    print "Precision for {}: {}".format(clf.__class__.__name__, avgPrecision)
+    print "Recall for {}: {}".format(clf.__class__.__name__, avgRecall)
+
+def multiclass_AUC(clf, X, Y):
+    # Binarize the output
+    X, Y = np.array(X), np.array(Y)
+    Y = label_binarize(Y, classes=list(set(Y)))
+    n_classes = Y.shape[1]
+
+    # shuffle and split training and test sets
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=.5,
+                                                        random_state=0)
+    # Learn to predict each class against the other
+    classifier = OneVsRestClassifier(clf)
+    Y_score = classifier.fit(X_train, Y_train).predict(X_test)
+
+    # Compute ROC curve and ROC area for each class
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(Y_test[:, i], Y_score[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    # Compute micro-average ROC curve and ROC area
+    fpr["micro"], tpr["micro"], _ = roc_curve(Y_test.ravel(), Y_score.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+    print "AUC for multiclass {}: {}".format(clf.__class__.__name__, roc_auc["micro"])
+
 def main():
     f = FeatureGen()
     # Binary classification
-    # X, Y = f.getXY(classifier='PD')
-    # cross_validate_AUC(LinearSVC(class_weight='auto'), X, Y)
-    # cross_validate_accuracy(LinearSVC(class_weight='auto'), X, Y)
-
-    # Severity classification
     X, Y = f.getXY(classifier='severity')
-    cross_validate_accuracy(LinearSVC(class_weight='auto'), X, Y)
-    cross_validate_AUC(LinearSVC(class_weight='auto'), X, label_binarize(Y, classes=list(set(Y))))
+    Y = np.asarray(Y)
     
+    nfeatures = len(X[0])
+    max = 0
+    best_sub = forward_search(nfeatures, tst_multiclass_AUC, [DecisionTreeClassifier(), X, Y])
+    print best_sub
+
+    X = np.array(X)
+    X = X[:, best_sub]
+    multiclass_AUC(DecisionTreeClassifier(), X, Y)
+    cross_validate_accuracy(DecisionTreeClassifier(), X, Y)
+    get_precision_recall(DecisionTreeClassifier(), X, Y)
 
 if __name__ == "__main__":
     main()

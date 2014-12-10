@@ -1,49 +1,40 @@
-
+import copy
 import numpy as np
-from sklearn.cross_validation import cross_val_score
+from sklearn.cross_validation import cross_val_score, train_test_split
+from sklearn.preprocessing import label_binarize
+from sklearn.metrics import f1_score, roc_auc_score, auc, roc_curve
+from sklearn.multiclass import OneVsRestClassifier
+import sys
 
 
 # This code was adapted from Sebastian Raschka
-def forward_search(features, max_k, criterion_func, params):
+def forward_search(nfeatures, criterion_func, params):
     '''
     Forward search for best subset of features
-    :param features: list of indeces indicating features (i.e. list(xrange(
-    :param max_k:
+    :param nfeatures: list of indices indicating features
     :param criterion_func:
     :param params:
     :return:
     '''
 
-    clf = params[0]
-    X = params[1]
-    Y = params[2]
-
-
-    # Initialize empty feature subset
+    features = range(nfeatures)
+    clf, X, Y = params
     feat_sub = []
-    k = 0
-    d = len(features)
-    if max_k > d:
-        max_k = d
+    best_feat_sub = []
+    best_score = 0.
 
-    while True:
+    print('Starting Feature select:')
+    while len(feat_sub) < nfeatures:
         # Evaluate criteriafunc on the subset of parameters
-        crit_func_max = criterion_func(feat_sub + [features[0]], clf, X, Y)
-        best_feat = features[0]
-        for x in features[1:]:
-            crit_func_eval = criterion_func(feat_sub + [x], clf, X, Y)
-            if crit_func_eval > crit_func_max:
-                crit_func_max = crit_func_eval
-                best_feat = x
-        feat_sub.append(best_feat)
-        features.remove(best_feat)
+        new_feat, new_score = max([(candidate_feat, criterion_func(feat_sub + [candidate_feat], clf, X, Y)) for candidate_feat in features], key = lambda x:x[1])
+        feat_sub.append(new_feat)
+        features.remove(new_feat)
 
-        # Termination condition
-        k = len(feat_sub)
-        if k == max_k:
-            break
+        if new_score > best_score:
+            best_feat_sub = copy.deepcopy(feat_sub)
+            best_score = new_score 
 
-    return feat_sub
+    return best_feat_sub
 
 
 #Cross_validate accuracy on subset of features indicated by indexFeatures
@@ -53,3 +44,37 @@ def cv_accuracy(indexFeatures, clf, X, Y):
     scores = cross_val_score(clf, X[:, indexFeatures], Y, cv=5)
     accuracy = sum(scores) / len(scores)
     return accuracy
+
+def tst_auc(indexFeatures, clf, X, Y):
+    X = np.array(X)
+    Y = np.array(Y)
+    scores = cross_val_score(clf,  X[:, indexFeatures], Y, cv=10, scoring='roc_auc')
+    avgAuc = sum(scores)/float(len(scores))
+    return avgAuc
+
+def tst_multiclass_AUC(indexFeatures, clf, X, Y):
+    # Binarize the output
+    X, Y = np.array(X), np.array(Y)
+    X = X[:, indexFeatures]
+    Y = label_binarize(Y, classes=list(set(Y)))
+    n_classes = Y.shape[1]
+
+    # shuffle and split training and test sets
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=.5,
+                                                        random_state=0)
+    # Learn to predict each class against the other
+    classifier = OneVsRestClassifier(clf)
+    Y_score = classifier.fit(X_train, Y_train).predict(X_test)
+
+    # Compute ROC curve and ROC area for each class
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(Y_test[:, i], Y_score[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    # Compute micro-average ROC curve and ROC area
+    fpr["micro"], tpr["micro"], _ = roc_curve(Y_test.ravel(), Y_score.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+    return roc_auc['micro']

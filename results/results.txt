@@ -14,6 +14,10 @@ Comparison of models:
 	Random Forest - Training AUC: 98.6%, Test AUC: 71.4%
 	Decision Tree - Training AUC: 99.7%, Test AUC: 73.0%
 
+Feature selection:
+	Best features for binary classifier: [26, 33, 25, 2, 8, 30, 0, 22, 32, 5, 38, 36, 21, 12, 24, 35, 16, 10, 18, 9, 11]
+	Best features for severity classifier (RandomForest): [8, 20, 30, 10, 26, 35]
+
 
 Description of images and results:
 	-train_test_error_18_means.png
